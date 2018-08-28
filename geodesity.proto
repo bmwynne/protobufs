@@ -1,0 +1,95 @@
+// Protobuf specifications for Geodesity binary communications.
+//
+// Supports Python, Go, Swift, C#, and Java (Android Studio)
+// (Currently only Java and C# are explicitly defined.)
+//
+// For more information, refer to the README
+
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+
+// Java
+//
+option java_package = "io.geodesity.proto";
+option java_outer_classname = "GeodesityProtos";
+
+
+// C#
+//
+option csharp_namespace = "Geodesity.Protos";
+
+
+// Enums
+//
+enum EventType {
+  EVENT_INVALID = 0;
+  EVENT_HEARTBEAT = 1;
+  EVENT_POSITION_TIMED = 2;
+  EVENT_IDLE_NOTIFY = 3;
+  EVENT_PARK_NOTIFY = 4;
+} 
+
+enum NotifyType {
+  NOTIFY_INVALID = 0;
+  NOTIFY_ENTER_IDLE = 1;
+  NOTIFY_CONTINUE_IDLE = 2;
+  NOTIFY_LEAVE_IDLE = 3;
+}
+
+
+// Main Event - All protocols derive from this message.
+//
+message Event {
+  string id = 1;				// id is a string of any length; "10000123", "TEST-01", or an IMEI
+  EventType  type = 2;				// explicitly declared to make for easy switching by parsers
+  google.protobuf.Timestamp timestamp = 3;	// UTC/Unix-epoch of moment when the message was created
+  uint64 utc_millis = 4;    // millis since unix epoch in UTC tz
+
+  oneof Details {				// Each Event type is included here with a unique protobuf Tag
+    Heartbeat heartbeat = 100;			// Tags are in the range of 100-299
+    Position position = 101;			// Sub-message formats are described below.
+    IdleNotify idle_notify = 102;		// Only one Event type can exist at a time (oneof)
+    ParkNotify park_notify = 103;
+  }
+}
+
+
+// Heartbeat - Device wakeup/keep-alive message
+//
+message Heartbeat {
+  uint32 sequence = 300;			// sequential counter; wraps at max-int32
+}
+
+
+// Position - General location message
+//
+message Position {
+  float longitude = 301;
+  float latitude = 302;
+  float altitude = 303;
+  float course = 304;
+  float speed = 305;
+  float odometer = 306;
+}
+
+
+// IdleNotify - Reported when a device recognizes idle start, continue, or end
+//
+message IdleNotify {
+  Position position_timed = 307;
+  NotifyType type = 308;
+  uint32 seconds = 309;  
+}
+ 
+
+// ParkNotify - Reported when a device recognizes park start, continue, or end
+//
+message ParkNotify {
+  Position position_timed = 310;
+  NotifyType type = 311;
+  uint32 seconds = 312;  
+}
+
+
+// ... Continue adding specific and general message types for optos, sensors. etc.
+// ... Try not to be too specific.
